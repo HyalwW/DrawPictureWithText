@@ -50,14 +50,16 @@ public class BTTView extends BaseSurfaceView {
         dst = new Rect();
         mPaint.setFilterBitmap(true);
         random = new Random();
+        holder.setFormat(PixelFormat.TRANSPARENT);
     }
 
     @Override
     protected void onReady() {
         doInThread(() -> {
-            stopAnim();
-            setBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.gm));
-            toast("默认图片载入完成");
+            if (base == null) {
+                setBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.gm));
+                toast("默认图片载入完成");
+            }
             draw();
         });
     }
@@ -68,7 +70,7 @@ public class BTTView extends BaseSurfaceView {
 
     public void draw() {
         if (base == null) {
-            toast("图片正在加载");
+            toast("请先设置图片");
             return;
         }
         textInLine += 10;
@@ -162,13 +164,13 @@ public class BTTView extends BaseSurfaceView {
                 int top = textSize * (strings.length + 2);
                 dst.set(0, top, getMeasuredWidth(), (int) (top + base.getHeight() * ((float) getMeasuredWidth() / base.getWidth())));
                 canvas.drawBitmap(base, null, dst, mPaint);
-                mPaint.setTextAlign(Paint.Align.CENTER);
-                mPaint.setFakeBoldText(true);
-                mPaint.setColor(Color.RED);
-                mPaint.setTextSize(60);
-                canvas.drawText("D~D~D~DENG~~", getMeasuredWidth() >> 1, (float) (getMeasuredHeight() * 0.75), mPaint);
-                mPaint.setTextSize(68);
-                canvas.drawText("《鬼灭之刃》", getMeasuredWidth() >> 1, (float) (getMeasuredHeight() * 0.8), mPaint);
+//                mPaint.setTextAlign(Paint.Align.CENTER);
+//                mPaint.setFakeBoldText(true);
+//                mPaint.setColor(Color.RED);
+//                mPaint.setTextSize(60);
+//                canvas.drawText("D~D~D~DENG~~", getMeasuredWidth() >> 1, (float) (getMeasuredHeight() * 0.75), mPaint);
+//                mPaint.setTextSize(68);
+//                canvas.drawText("《鬼灭之刃》", getMeasuredWidth() >> 1, (float) (getMeasuredHeight() * 0.8), mPaint);
             }
         }
     }

@@ -25,6 +25,7 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
     protected long UPDATE_RATE = 16;
     protected Paint mPaint;
     private boolean running = true;
+    private LifecycleListener listener;
 
     public BaseSurfaceView(Context context) {
         this(context, null);
@@ -55,8 +56,10 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
         switch (msg.what) {
             case 207:
                 if (running) {
+                    long before = System.currentTimeMillis();
                     drawEverything(null);
-                    builder.newMsg().what(207).sendDelay(UPDATE_RATE);
+                    long waste = System.currentTimeMillis() - before;
+                    builder.newMsg().what(207).sendDelay(UPDATE_RATE - waste);
                 }
                 break;
             case 208:
@@ -93,12 +96,16 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
         mHandlerThread.start();
         drawHandler = new Handler(mHandlerThread.getLooper(), this);
         onReady();
-        startAnim();
+        if (listener != null) {
+            listener.onCreate();
+        }
     }
 
     @Override
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-
+        if (listener != null) {
+            listener.onChanged();
+        }
     }
 
     @Override
@@ -107,6 +114,9 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
             mHandlerThread.quitSafely();
         } else {
             mHandlerThread.quit();
+        }
+        if (listener != null) {
+            listener.onDestroy();
         }
     }
 
@@ -155,7 +165,7 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
         private void sendDelay(long millis) {
             checkMessageNonNull();
             onDataUpdate();
-            drawHandler.sendMessageAtTime(message, millis);
+            drawHandler.sendMessageAtTime(message, millis < 0 ? 10 : millis);
         }
 
         private void checkMessageNonNull() {
@@ -163,10 +173,20 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
                 throw new IllegalStateException("U should call newMsg() before use");
             }
         }
-
-
-
     }
+
+    public void setListener(LifecycleListener listener) {
+        this.listener = listener;
+    }
+
+    public interface LifecycleListener {
+        void onCreate();
+
+        void onChanged();
+
+        void onDestroy();
+    }
+
     /**
      * 用于初始化画笔，基础数据等
      */
@@ -199,6 +219,7 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
 
     /**
      * 是否阻止刷新时清空画布
+     *
      * @return
      */
     protected abstract boolean preventClear();

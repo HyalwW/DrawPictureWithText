@@ -4,8 +4,6 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.PixelFormat;
-import android.graphics.PorterDuff;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
@@ -19,10 +17,8 @@ import java.util.Random;
  * Date: 2020/1/7
  */
 public class WebSurfaceView extends BaseSurfaceView {
-    private Paint mPaint;
     private Random random;
     private List<WebDot> dots;
-    private boolean running;
 
     public WebSurfaceView(Context context) {
         this(context, null);
@@ -34,30 +30,6 @@ public class WebSurfaceView extends BaseSurfaceView {
 
     public WebSurfaceView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init();
-    }
-
-    private void init() {
-        mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        random = new Random();
-
-        holder = getHolder();
-        holder.addCallback(this);
-
-    }
-
-    private void drawEverything() {
-        Canvas canvas = holder.lockCanvas();
-        if (canvas != null) {
-            clearCanvas(canvas);
-            drawDots(canvas);
-            drawLines(canvas);
-            holder.unlockCanvasAndPost(canvas);
-        }
-    }
-
-    private void clearCanvas(Canvas canvas) {
-        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
     }
 
     private void drawDots(Canvas canvas) {
@@ -110,8 +82,7 @@ public class WebSurfaceView extends BaseSurfaceView {
 
     @Override
     protected void onInit() {
-        setZOrderOnTop(true);
-        holder.setFormat(PixelFormat.TRANSLUCENT);
+        random = new Random();
     }
 
     @Override
@@ -122,12 +93,15 @@ public class WebSurfaceView extends BaseSurfaceView {
                 dots.add(new WebDot());
             }
         }
+        startAnim();
     }
 
     @Override
     protected void onDataUpdate() {
-        for (WebDot dot : dots) {
-            dot.move();
+        synchronized (dots) {
+            for (WebDot dot : dots) {
+                dot.move();
+            }
         }
     }
 
