@@ -110,6 +110,7 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
 
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
+        drawHandler.removeCallbacksAndMessages(null);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             mHandlerThread.quitSafely();
         } else {
