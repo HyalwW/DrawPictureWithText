@@ -3,7 +3,7 @@ package com.example.viewdemo;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 
@@ -117,6 +117,11 @@ public class WebSurfaceView extends BaseSurfaceView {
             drawDots(canvas);
             drawLines(canvas);
         }
+    }
+
+    @Override
+    protected void onDrawRect(Canvas canvas, Object data, Rect rect) {
+
     }
 
     @Override

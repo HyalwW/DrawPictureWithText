@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.util.AttributeSet;
 
 import com.example.viewdemo.BaseSurfaceView;
@@ -20,12 +21,13 @@ public class VideoTextView extends BaseSurfaceView {
     private int colorGap;
     private int textSize;
     //一行多少字
-    private int textInLine = 300;
+    private int textInLine = 200;
     private MediaDecoder decoder;
     private boolean isPlaying;
     private long currentPosition;
     private BitmapsNode bitmapsNode, bitmapRoot;
     private StringsNode stringsNode, stringRoot;
+    private Rect positionRect, videoRect;
     private Runnable decordBitmapRunnable = () -> {
         currentPosition = 0;
         while (currentPosition < decoder.getVedioFileLength()) {
@@ -39,11 +41,8 @@ public class VideoTextView extends BaseSurfaceView {
             }
             currentPosition += 30;
 //            Log.e("wwh", "VideoTextView --> : duration" + currentPosition);
-            if (!isPlaying) {
-                callDraw((float) currentPosition / decoder.getVedioFileLength() * 100);
-            }
+            callDraw((float) currentPosition / decoder.getVedioFileLength() * 100, positionRect);
         }
-//        start();
     };
     private Runnable bitmap2StringsRunnable = () -> {
         int code = 0;
@@ -58,6 +57,8 @@ public class VideoTextView extends BaseSurfaceView {
                     }
                     String[][] strings = new String[bitmap.getHeight()][bitmap.getWidth()];
                     textSize = getMeasuredWidth() / textInLine;
+                    int bottom = textSize * (strings.length + 1);
+                    videoRect.set(0, 0, getMeasuredWidth(), bottom < getMeasuredHeight() * 0.9 ? bottom : (int) (getMeasuredHeight() * 0.9));
                     for (int i = 0; i < strings.length; i++) {
                         for (int j = 0; j < strings[i].length; j++) {
                             int pixel = bitmap.getPixel(j, i);
@@ -82,13 +83,17 @@ public class VideoTextView extends BaseSurfaceView {
     private Runnable drawRunnable = () -> {
         int code = 0;
         while (true) {
-            if (stringRoot != null) {
-                if (stringRoot.hashCode() != code) {
-                    code = stringRoot.hashCode();
-                    callDrawDelay(stringRoot.getStrings(), 16);
-                } else {
-                    if (stringRoot.hasNext()) {
-                        stringRoot = stringRoot.next();
+            if (isPlaying) {
+                if (stringRoot != null) {
+                    if (stringRoot.hashCode() != code) {
+                        code = stringRoot.hashCode();
+                        callDrawDelay(stringRoot.getStrings(), videoRect, 16);
+                    } else {
+                        if (stringRoot.hasNext()) {
+                            stringRoot = stringRoot.next();
+                        } else {
+                            isPlaying = false;
+                        }
                     }
                 }
             }
@@ -116,10 +121,15 @@ public class VideoTextView extends BaseSurfaceView {
         colorGap = -Color.BLACK / temps.length;
         mPaint.setFilterBitmap(true);
         decoder = new MediaDecoder();
+        positionRect = new Rect();
+        videoRect = new Rect();
     }
 
     @Override
     protected void onReady() {
+        positionRect.set(0, (int) (getMeasuredHeight() * 0.9), getMeasuredWidth(), getMeasuredHeight());
+        callDraw("init");
+        doInThread(drawRunnable);
     }
 
     @Override
@@ -134,9 +144,16 @@ public class VideoTextView extends BaseSurfaceView {
 
     @Override
     protected void draw(Canvas canvas, Object data) {
-        canvas.drawColor(Color.WHITE);
+        if (data instanceof String) {
+            canvas.drawColor(Color.BLACK);
+        }
+    }
+
+    @Override
+    protected void onDrawRect(Canvas canvas, Object data, Rect rect) {
         if (data instanceof String[][]) {
 //            Log.e("wwh", "VideoTextView --> draw: ");
+            canvas.drawColor(Color.WHITE);
             String[][] strings = (String[][]) data;
             mPaint.setTextSize(textSize);
             StringBuilder builder;
@@ -148,15 +165,16 @@ public class VideoTextView extends BaseSurfaceView {
                     builder.append(s);
                 }
                 float width = mPaint.measureText(builder.toString());
-                canvas.drawText(builder.toString(), (float) getMeasuredWidth() / 2 - width / 2, textSize * (i + 1), mPaint);
+                canvas.drawText(builder.toString(), (float) getMeasuredWidth() / 2 - width / 2, rect.top + textSize * (i + 1), mPaint);
             }
         } else if (data instanceof Float) {
+            canvas.drawColor(Color.GRAY);
             mPaint.setColor(Color.BLUE);
             mPaint.setTextSize(60);
             float position = ((float) data);
             String text = position < 100 ? "视频加载进度:" + String.format("%.2f", position) + "%" : "加载完成";
             float width = mPaint.measureText(text);
-            canvas.drawText(text, (float) getMeasuredWidth() / 2 - width / 2, getMeasuredHeight() >> 1, mPaint);
+            canvas.drawText(text, (float) getMeasuredWidth() / 2 - width / 2, ((rect.bottom - rect.top) >> 1) + rect.top, mPaint);
         }
     }
 
@@ -168,7 +186,12 @@ public class VideoTextView extends BaseSurfaceView {
     public void start() {
         if (!isPlaying) {
             isPlaying = true;
-            doInThread(drawRunnable);
+        }
+    }
+
+    public void pause() {
+        if (isPlaying) {
+            isPlaying = false;
         }
     }
 
@@ -178,9 +201,17 @@ public class VideoTextView extends BaseSurfaceView {
     }
 
     public void setFile(String fileName) {
+        reset();
         decoder.decore(fileName);
         doInThread(decordBitmapRunnable);
         doInThread(bitmap2StringsRunnable);
+    }
+
+    private void reset() {
+        bitmapsNode = null;
+        bitmapRoot = null;
+        stringsNode = null;
+        stringRoot = null;
     }
 
     public boolean isDecoreDone() {

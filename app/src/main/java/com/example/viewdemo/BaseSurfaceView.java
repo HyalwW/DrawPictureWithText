@@ -5,13 +5,18 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
+import android.graphics.Rect;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Created by Wang.Wenhui
@@ -26,6 +31,7 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
     protected Paint mPaint;
     private boolean running = true;
     private LifecycleListener listener;
+    private ExecutorService threadPool;
 
     public BaseSurfaceView(Context context) {
         this(context, null);
@@ -48,48 +54,72 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
         holder.addCallback(this);
 
         builder = new MsgBuilder();
+        threadPool = Executors.newCachedThreadPool();
         onInit();
     }
+
+    private static final int BASE_RUN = 207, CALL_RUN = 208, RUN_ON_THREAD = 209;
 
     @Override
     public boolean handleMessage(Message msg) {
         switch (msg.what) {
-            case 207:
+            case BASE_RUN:
                 if (running) {
                     long before = System.currentTimeMillis();
-                    drawEverything(null);
+                    drawEverything(null, null);
                     long waste = System.currentTimeMillis() - before;
-                    builder.newMsg().what(207).sendDelay(UPDATE_RATE - waste);
+                    builder.newMsg().what(BASE_RUN).sendDelay(UPDATE_RATE - waste);
                 }
                 break;
-            case 208:
-                drawEverything(msg.obj);
+            case CALL_RUN:
+                if (msg.peekData() != null) {
+                    Bundle bundle = msg.peekData();
+                    Rect dirty = bundle.getParcelable("dirty");
+                    drawEverything(msg.obj, dirty);
+                } else {
+                    drawEverything(msg.obj, null);
+                }
                 break;
-            case 209:
-                //todo 暂时修改为在新线程执行
-                new Thread(((Runnable) msg.obj)).start();
-//                ((Runnable) msg.obj).run();
+            case RUN_ON_THREAD:
+                threadPool.execute((Runnable) msg.obj);
                 break;
         }
         return true;
     }
 
-    private synchronized void drawEverything(Object data) {
-        Canvas canvas = holder.lockCanvas();
-        if (canvas != null) {
-            if (!preventClear()) {
-                canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+    private synchronized void drawEverything(Object data, Rect dirty) {
+        if (dirty != null) {
+            Canvas canvas = holder.lockCanvas(dirty);
+            if (canvas != null) {
+                if (!preventClear()) {
+                    clearCanvas(canvas);
+                }
+                onDrawRect(canvas, data, dirty);
+                if (holder.getSurface().isValid()) {
+                    holder.unlockCanvasAndPost(canvas);
+                }
             }
-            if (running) {
-                onRefresh(canvas);
-            }
-            if (data != null) {
-                draw(canvas, data);
-            }
-            if (holder.getSurface().isValid()) {
-                holder.unlockCanvasAndPost(canvas);
+        } else {
+            Canvas canvas = holder.lockCanvas();
+            if (canvas != null) {
+                if (!preventClear()) {
+                    clearCanvas(canvas);
+                }
+                if (running) {
+                    onRefresh(canvas);
+                }
+                if (data != null) {
+                    draw(canvas, data);
+                }
+                if (holder.getSurface().isValid()) {
+                    holder.unlockCanvasAndPost(canvas);
+                }
             }
         }
+    }
+
+    protected void clearCanvas(Canvas canvas) {
+        canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
     }
 
     @Override
@@ -125,7 +155,7 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
 
     public void startAnim() {
         running = true;
-        builder.newMsg().what(207).send();
+        builder.newMsg().what(BASE_RUN).send();
     }
 
     public void stopAnim() {
@@ -137,11 +167,22 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
     }
 
     public void callDrawDelay(Object data, long millis) {
-        builder.newMsg().obj(data).what(208).sendDelay(millis);
+        builder.newMsg().obj(data).what(CALL_RUN).sendDelay(millis);
     }
 
+    public void callDraw(Object data, Rect rect) {
+        callDrawDelay(data, rect, 0);
+    }
+
+    public void callDrawDelay(Object data, Rect rect, long millis) {
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("dirty", rect);
+        builder.newMsg().obj(data).what(CALL_RUN).bundle(bundle).sendDelay(millis);
+    }
+
+    //注意死循环线程
     public void doInThread(Runnable runnable) {
-        builder.newMsg().what(209).obj(runnable).send();
+        builder.newMsg().what(RUN_ON_THREAD).obj(runnable).send();
     }
 
     private final class MsgBuilder {
@@ -165,6 +206,12 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
             return this;
         }
 
+        MsgBuilder bundle(Bundle bundle) {
+            checkMessageNonNull();
+            message.setData(bundle);
+            return this;
+        }
+
         void send() {
             sendDelay(0);
         }
@@ -180,6 +227,7 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
                 throw new IllegalStateException("U should call newMsg() before use");
             }
         }
+
     }
 
     public void setListener(LifecycleListener listener) {
@@ -187,11 +235,13 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
     }
 
     public interface LifecycleListener {
+
         void onCreate();
 
         void onChanged();
 
         void onDestroy();
+
     }
 
     /**
@@ -223,6 +273,15 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
      * @param data   数据
      */
     protected abstract void draw(Canvas canvas, Object data);
+
+    /**
+     * 局部刷新
+     *
+     * @param canvas
+     * @param data   数据
+     * @param rect   画布大小
+     */
+    protected abstract void onDrawRect(Canvas canvas, Object data, Rect rect);
 
     /**
      * 是否阻止刷新时清空画布

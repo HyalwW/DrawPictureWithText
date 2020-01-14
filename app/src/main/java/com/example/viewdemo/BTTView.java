@@ -175,6 +175,11 @@ public class BTTView extends BaseSurfaceView {
         }
     }
 
+    @Override
+    protected void onDrawRect(Canvas canvas, Object data, Rect rect) {
+
+    }
+
     private int randomColor() {
         return Color.rgb(random.nextInt(255), random.nextInt(255), random.nextInt(255));
     }

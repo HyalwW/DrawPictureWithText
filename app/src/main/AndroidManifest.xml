@@ -17,6 +17,9 @@
         android:usesCleartextTraffic="true"
         tools:ignore="GoogleAppIndexingWarning">
         <activity
+            android:name=".VideoActivity"
+            android:theme="@style/MyTheme" />
+        <activity
             android:name=".MainActivity"
             android:theme="@style/MyTheme">
             <intent-filter>
