@@ -33,15 +33,13 @@ public class MediaDecoder {
     /**
      * 获取视频某一帧
      *
-     * @param timeMs   毫秒
-     * @param listener
+     * @param timeMs 毫秒
      */
-    public boolean decodeFrame(long timeMs, OnGetBitmapListener listener) {
-        if (retriever == null) return false;
+    public Bitmap decodeFrame(long timeMs) {
+        if (retriever == null) return null;
         Bitmap bitmap = retriever.getFrameAtTime(timeMs * 1000, MediaMetadataRetriever.OPTION_CLOSEST);
-        if (bitmap == null) return false;
-        listener.getBitmap(bitmap, timeMs);
-        return true;
+        if (bitmap == null) return null;
+        return bitmap;
     }
 
     /**
@@ -61,7 +59,4 @@ public class MediaDecoder {
         return isDone;
     }
 
-    public interface OnGetBitmapListener {
-        void getBitmap(Bitmap bitmap, long timeMs);
-    }
 }

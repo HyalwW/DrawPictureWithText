@@ -183,8 +183,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     videoInfo.bucketDisplayName = bucketDisplayName;
                     videoInfo.bookmark = bookmark;
                     mVideoInfos.add(videoInfo);
+                    Log.e("wwh", "MainActivity --> onCreate: " + videoInfo.toString());
                 } while (cursor.moveToNext());
-                videoTextView.setFile(mVideoInfos.get(1).data);
+                videoTextView.setFile(mVideoInfos.get(0).data);
                 cursor.close();
             }
         }).start();

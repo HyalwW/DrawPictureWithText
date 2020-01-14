@@ -27,6 +27,72 @@ public class VideoTextView extends BaseSurfaceView {
     private MediaDecoder decoder;
     private boolean isPlaying;
     private long currentPosition;
+    private BitmapsNode bitmapsNode, bitmapRoot;
+    private StringsNode stringsNode, stringRoot;
+    private Runnable decordBitmapRunnable = () -> {
+        currentPosition = 0;
+        while (currentPosition < decoder.getVedioFileLength()) {
+            BitmapsNode node = new BitmapsNode(decoder.decodeFrame(currentPosition));
+            if (bitmapsNode == null) {
+                bitmapsNode = node;
+                bitmapRoot = node;
+            } else {
+                bitmapsNode.setNext(node);
+                bitmapsNode = bitmapsNode.next();
+            }
+            currentPosition += 33;
+//            Log.e("wwh", "VideoTextView --> : duration" + currentPosition);
+        }
+    };
+    private Runnable bitmap2StringsRunnable = () -> {
+        int code = 0;
+        while (true) {
+            if (bitmapRoot != null) {
+                if (bitmapRoot.hashCode() != code) {
+//                    Log.e("wwh", "VideoTextView --> : code" + code);
+                    code = bitmapRoot.hashCode();
+                    Bitmap bitmap = bitmapRoot.getBitmap();
+                    if (textInLine < bitmap.getWidth()) {
+                        bitmap = BitmapUtil.scaleBitmap(bitmap, (float) textInLine / bitmap.getWidth());
+                    }
+                    String[][] strings = new String[bitmap.getHeight()][bitmap.getWidth()];
+                    textSize = getMeasuredWidth() / textInLine;
+                    for (int i = 0; i < strings.length; i++) {
+                        for (int j = 0; j < strings[i].length; j++) {
+                            int pixel = bitmap.getPixel(j, i);
+                            strings[i][j] = genText(pixel);
+                        }
+                    }
+                    if (stringsNode == null) {
+                        stringsNode = new StringsNode(strings);
+                        stringRoot = stringsNode;
+                    } else {
+                        stringsNode.setNext(new StringsNode(strings));
+                        stringsNode = stringsNode.next();
+                    }
+                } else {
+                    if (bitmapRoot.hasNext()) {
+                        bitmapRoot = bitmapRoot.next();
+                    }
+                }
+            }
+        }
+    };
+    private Runnable drawRunnable = () -> {
+        int code = 0;
+        while (true) {
+            if (stringRoot != null) {
+                if (stringRoot.hashCode() != code) {
+                    code = stringRoot.hashCode();
+                    callDrawDelay(stringRoot.getStrings(), 33);
+                } else {
+                    if (stringRoot.hasNext()) {
+                        stringRoot = stringRoot.next();
+                    }
+                }
+            }
+        }
+    };
 
     public VideoTextView(Context context) {
         super(context);
@@ -53,7 +119,6 @@ public class VideoTextView extends BaseSurfaceView {
 
     @Override
     protected void onReady() {
-
     }
 
     @Override
@@ -70,6 +135,7 @@ public class VideoTextView extends BaseSurfaceView {
     protected void draw(Canvas canvas, Object data) {
         canvas.drawColor(Color.WHITE);
         if (data instanceof String[][]) {
+//            Log.e("wwh", "VideoTextView --> draw: " );
             String[][] strings = (String[][]) data;
             mPaint.setTextSize(textSize);
             StringBuilder builder;
@@ -83,10 +149,6 @@ public class VideoTextView extends BaseSurfaceView {
                 float width = mPaint.measureText(builder.toString());
                 canvas.drawText(builder.toString(), (float) getMeasuredWidth() / 2 - width / 2, textSize * (i + 1), mPaint);
             }
-            int top = textSize * (strings.length + 2);
-            dst.set(0, top, getMeasuredWidth(), (int) (top + base.getHeight() * ((float) getMeasuredWidth() / base.getWidth())));
-            canvas.drawBitmap(base, null, dst, mPaint);
-            draw();
         }
     }
 
@@ -95,41 +157,11 @@ public class VideoTextView extends BaseSurfaceView {
         return false;
     }
 
-    private MediaDecoder.OnGetBitmapListener listener = (bitmap, timeMs) -> {
-        if (base != null && !base.isRecycled()) {
-            base.recycle();
-        }
-        base = bitmap;
-    };
-
     public void start() {
         if (!isPlaying) {
             isPlaying = true;
-            currentPosition = 0;
-            draw();
+            doInThread(drawRunnable);
         }
-    }
-
-    public void draw() {
-        if (currentPosition < decoder.getVedioFileLength()) {
-            decoder.decodeFrame(currentPosition, listener);
-            currentPosition += 1000;
-        }
-        if (textInLine < base.getWidth()) {
-            if (bitmap != null && !bitmap.isRecycled()) {
-                bitmap.recycle();
-            }
-            bitmap = BitmapUtil.scaleBitmap(base, (float) textInLine / base.getWidth());
-        }
-        String[][] strings = new String[bitmap.getHeight()][bitmap.getWidth()];
-        textSize = getMeasuredWidth() / textInLine;
-        for (int i = 0; i < strings.length; i++) {
-            for (int j = 0; j < strings[i].length; j++) {
-                int pixel = bitmap.getPixel(j, i);
-                strings[i][j] = genText(pixel);
-            }
-        }
-        callDraw(strings);
     }
 
     private String genText(int pixel) {
@@ -139,6 +171,8 @@ public class VideoTextView extends BaseSurfaceView {
 
     public void setFile(String fileName) {
         decoder.decore(fileName);
+        doInThread(decordBitmapRunnable);
+        doInThread(bitmap2StringsRunnable);
     }
 
     public boolean isDecoreDone() {

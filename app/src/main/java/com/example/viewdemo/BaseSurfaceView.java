@@ -66,7 +66,9 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
                 drawEverything(msg.obj);
                 break;
             case 209:
-                ((Runnable) msg.obj).run();
+                //todo 暂时修改为在新线程执行
+                new Thread(((Runnable) msg.obj)).start();
+//                ((Runnable) msg.obj).run();
                 break;
         }
         return true;
