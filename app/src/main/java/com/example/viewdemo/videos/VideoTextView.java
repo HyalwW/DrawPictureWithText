@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Rect;
 import android.util.AttributeSet;
 
 import com.example.viewdemo.BaseSurfaceView;
@@ -17,13 +16,11 @@ import java.util.Arrays;
  * Date: 2020/1/14
  */
 public class VideoTextView extends BaseSurfaceView {
-    private Bitmap bitmap, base;
     private String[] temps;
     private int colorGap;
     private int textSize;
     //一行多少字
     private int textInLine = 300;
-    private Rect dst;
     private MediaDecoder decoder;
     private boolean isPlaying;
     private long currentPosition;
@@ -40,9 +37,13 @@ public class VideoTextView extends BaseSurfaceView {
                 bitmapsNode.setNext(node);
                 bitmapsNode = bitmapsNode.next();
             }
-            currentPosition += 33;
+            currentPosition += 30;
 //            Log.e("wwh", "VideoTextView --> : duration" + currentPosition);
+            if (!isPlaying) {
+                callDraw((float) currentPosition / decoder.getVedioFileLength() * 100);
+            }
         }
+//        start();
     };
     private Runnable bitmap2StringsRunnable = () -> {
         int code = 0;
@@ -84,7 +85,7 @@ public class VideoTextView extends BaseSurfaceView {
             if (stringRoot != null) {
                 if (stringRoot.hashCode() != code) {
                     code = stringRoot.hashCode();
-                    callDrawDelay(stringRoot.getStrings(), 33);
+                    callDrawDelay(stringRoot.getStrings(), 16);
                 } else {
                     if (stringRoot.hasNext()) {
                         stringRoot = stringRoot.next();
@@ -108,12 +109,12 @@ public class VideoTextView extends BaseSurfaceView {
 
     @Override
     protected void onInit() {
-        String temp = "一二三六四品圆履";
+//        一二三六四品圆履
+        String temp = "一十工干天王口凸田回品困圆淼";
         temps = temp.split("");
         temps = Arrays.copyOfRange(temps, 1, temps.length);
         colorGap = -Color.BLACK / temps.length;
         mPaint.setFilterBitmap(true);
-        dst = new Rect();
         decoder = new MediaDecoder();
     }
 
@@ -135,7 +136,7 @@ public class VideoTextView extends BaseSurfaceView {
     protected void draw(Canvas canvas, Object data) {
         canvas.drawColor(Color.WHITE);
         if (data instanceof String[][]) {
-//            Log.e("wwh", "VideoTextView --> draw: " );
+//            Log.e("wwh", "VideoTextView --> draw: ");
             String[][] strings = (String[][]) data;
             mPaint.setTextSize(textSize);
             StringBuilder builder;
@@ -149,6 +150,13 @@ public class VideoTextView extends BaseSurfaceView {
                 float width = mPaint.measureText(builder.toString());
                 canvas.drawText(builder.toString(), (float) getMeasuredWidth() / 2 - width / 2, textSize * (i + 1), mPaint);
             }
+        } else if (data instanceof Float) {
+            mPaint.setColor(Color.BLUE);
+            mPaint.setTextSize(60);
+            float position = ((float) data);
+            String text = position < 100 ? "视频加载进度:" + String.format("%.2f", position) + "%" : "加载完成";
+            float width = mPaint.measureText(text);
+            canvas.drawText(text, (float) getMeasuredWidth() / 2 - width / 2, getMeasuredHeight() >> 1, mPaint);
         }
     }
 
