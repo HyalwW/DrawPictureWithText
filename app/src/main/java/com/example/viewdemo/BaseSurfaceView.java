@@ -131,7 +131,11 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
     }
 
     public void callDraw(Object data) {
-        builder.newMsg().obj(data).what(208).send();
+        callDrawDelay(data, 0);
+    }
+
+    public void callDrawDelay(Object data, long millis) {
+        builder.newMsg().obj(data).what(208).sendDelay(millis);
     }
 
     public void doInThread(Runnable runnable) {
