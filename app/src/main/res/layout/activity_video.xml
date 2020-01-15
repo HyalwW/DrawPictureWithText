@@ -13,27 +13,39 @@
         android:text="选择视频"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <ExpandableListView
-        android:id="@+id/list_view"
+    <SeekBar
+        android:id="@+id/seek_bar"
         android:layout_width="match_parent"
-        android:layout_height="150dp"
+        android:layout_height="wrap_content"
         app:layout_constraintTop_toBottomOf="@id/choose_video" />
 
-    <com.example.viewdemo.videos.VideoTextView
+    <com.example.viewdemo.videos.VideoView
         android:id="@+id/video"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/list_view" />
+        app:layout_constraintTop_toBottomOf="@id/seek_bar" />
 
     <Button
         android:id="@+id/start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
         android:layout_marginBottom="50dp"
         android:text="开始"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/pause"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/pause"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="50dp"
+        android:layout_marginBottom="50dp"
+        android:text="暂停"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/start" />
 
 </android.support.constraint.ConstraintLayout>

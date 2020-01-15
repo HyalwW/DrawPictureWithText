@@ -3,14 +3,19 @@ package com.example.viewdemo;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import android.text.TextUtils;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ListView;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
+import com.example.viewdemo.videos.FilmAdapter;
 import com.example.viewdemo.videos.VideoInfo;
-import com.example.viewdemo.videos.VideoTextView;
+import com.example.viewdemo.videos.VideoView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -50,8 +55,12 @@ public class VideoActivity extends AppCompatActivity implements View.OnClickList
             MediaStore.Video.Thumbnails.HEIGHT // 视频缩略图高度
     };
     private List<VideoInfo> mVideoInfos;
-    private VideoTextView videoTextView;
-    private Button chooseVideo, startBtn;
+    private VideoView videoView;
+    private Button chooseVideo, startBtn, pauseBtn;
+    private ListView listView;
+    private FilmAdapter adapter;
+    private AlertDialog dialog;
+    private SeekBar seekBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,38 +141,104 @@ public class VideoActivity extends AppCompatActivity implements View.OnClickList
                     videoInfo.bucketDisplayName = bucketDisplayName;
                     videoInfo.bookmark = bookmark;
                     mVideoInfos.add(videoInfo);
-                    Log.e("wwh", "MainActivity --> onCreate: " + videoInfo.toString());
                 } while (cursor.moveToNext());
-                videoTextView.setFile(mVideoInfos.get(0).data);
                 cursor.close();
+                startBtn.post(() -> adapter.setList(mVideoInfos));
             }
         }).start();
     }
 
     private void initView() {
-        videoTextView = findViewById(R.id.video);
+        videoView = findViewById(R.id.video);
         chooseVideo = findViewById(R.id.choose_video);
         chooseVideo.setOnClickListener(this);
         startBtn = findViewById(R.id.start);
         startBtn.setOnClickListener(this);
+        pauseBtn = findViewById(R.id.pause);
+        pauseBtn.setOnClickListener(this);
+        adapter = new FilmAdapter(this);
+        View view = LayoutInflater.from(this).inflate(R.layout.dialog, null);
+        dialog = new AlertDialog.Builder(this)
+                .setView(view)
+                .setCancelable(true)
+                .create();
+        listView = view.findViewById(R.id.list_view);
+        listView.setAdapter(adapter);
+        listView.setOnItemClickListener((parent, v, position, id) -> {
+            dialog.dismiss();
+            videoView.setFile(mVideoInfos.get(position).data);
+        });
+        seekBar = findViewById(R.id.seek_bar);
+        seekBar.setMax(100);
+
+        videoView.setListener(new VideoView.PlayerListener() {
+            @Override
+            public void onProgressBuffered(int progress) {
+                seekBar.setSecondaryProgress(progress);
+            }
+
+            @Override
+            public void onProgressPlayed(int progress) {
+                seekBar.setProgress(progress);
+            }
+
+            @Override
+            public void onStart() {
+
+            }
+
+            @Override
+            public void onStop() {
+
+            }
+        });
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                //todo 延迟高，优化后再用
+//                if (fromUser) {
+//                    videoView.seekTo(progress);
+//                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                videoView.seekTo(seekBar.getProgress());
+            }
+        });
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.choose_video:
+                dialog.show();
                 break;
             case R.id.start:
-                if (videoTextView.isDecoreDone()) {
-//                    if (startBtn.getText() == "开始") {
-                        videoTextView.start();
-//                        startBtn.setText("暂停");
-//                    } else {
-//                        videoTextView.pause();
-//                        startBtn.setText("开始");
-//                    }
+                if (TextUtils.isEmpty(videoView.getFileName())) {
+                    Toast.makeText(getApplicationContext(), "请选择视频", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (videoView.isDecoreDone()) {
+                    videoView.start();
                 } else {
-                    Toast.makeText(getApplicationContext(), "视频还加载完", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(getApplicationContext(), "视频还未加载完", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case R.id.pause:
+                if (TextUtils.isEmpty(videoView.getFileName())) {
+                    Toast.makeText(getApplicationContext(), "请选择视频", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                if (videoView.isDecoreDone()) {
+                    videoView.pause();
+                } else {
+                    Toast.makeText(getApplicationContext(), "视频还未加载完", Toast.LENGTH_SHORT).show();
                 }
                 break;
         }

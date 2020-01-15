@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
     private BTTView view;
     private String url = "http://img2.imgtn.bdimg.com/it/u=3510436638,3204214416&fm=26&gp=0.jpg";
-    private Button choosePic, takePhoto, drawBtn;
+    private Button choosePic, takePhoto, drawBtn, go2video;
     private String mTempPhotoPath;
     private Uri imageUri;
     private Bitmap bitmap;
@@ -45,28 +45,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
         view = findViewById(R.id.btt_view);
-        view.setListener(new BaseSurfaceView.LifecycleListener() {
-            @Override
-            public void onCreate() {
-
-            }
-
-            @Override
-            public void onChanged() {
-
-            }
-
-            @Override
-            public void onDestroy() {
-
-            }
-        });
         choosePic = findViewById(R.id.choose_pic);
         takePhoto = findViewById(R.id.take_photo);
         drawBtn = findViewById(R.id.draw);
         choosePic.setOnClickListener(this);
         takePhoto.setOnClickListener(this);
         drawBtn.setOnClickListener(this);
+        go2video = findViewById(R.id.video);
+        go2video.setOnClickListener(this);
         new Thread(() -> {
             view.setBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.gm));
         }).start();
@@ -136,7 +122,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 takePhoto();
                 break;
             case R.id.draw:
-//                view.draw();
+                view.draw();
+                break;
+            case R.id.video:
                 startActivity(new Intent(this, VideoActivity.class));
                 break;
         }
