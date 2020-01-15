@@ -12,6 +12,7 @@ import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.widget.Toast;
 
 import com.example.viewdemo.BaseSurfaceView;
@@ -79,6 +80,26 @@ public class VideoView extends BaseSurfaceView {
         super(context, attrs, defStyleAttr);
     }
 
+    private float scaleX, scaleY, scale = 3f;
+    private boolean zoomIn;
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                zoomIn = true;
+            case MotionEvent.ACTION_MOVE:
+                scaleX = event.getX();
+                scaleY = event.getY();
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                zoomIn = false;
+                break;
+        }
+        return true;
+    }
+
     @Override
     protected void onInit() {
 //        一二三六四品圆履
@@ -136,6 +157,9 @@ public class VideoView extends BaseSurfaceView {
             mPaint.setTextSize(textSize);
             mPaint.setColor(Color.BLACK);
             String[] split = strings.split(";");
+            if (zoomIn) {
+                canvas.scale(scale, scale, scaleX, scaleY);
+            }
             //todo 一次性画完字解注释这
 //            float width = mPaint.measureText(strings.substring(0, textInLine));
 //            StaticLayout layout = new StaticLayout(strings, mPaint, (int) width, Layout.Alignment.ALIGN_CENTER, 1.0f, 0.0f, false);
@@ -171,7 +195,7 @@ public class VideoView extends BaseSurfaceView {
             mPaint.setColor(Color.BLUE);
             mPaint.setTextSize(60);
             float position = ((float) data);
-            String text = position < 100 ? "视频处理进度:" + String.format("%.2f", position) + "%" : "加载完成";
+            String text = position < 100 ? "视频处理进度:" + String.format("%.2f", position) + "%" : "处理完成";
             float width = mPaint.measureText(text);
             canvas.drawText(text, (float) getMeasuredWidth() / 2 - width / 2, ((rect.bottom - rect.top) >> 1) + rect.top + 30, mPaint);
         }
