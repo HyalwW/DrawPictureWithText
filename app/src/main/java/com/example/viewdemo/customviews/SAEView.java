@@ -1,3 +1,4 @@
+package com.example.viewdemo.customviews;
 
 import android.animation.Animator;
 import android.animation.ValueAnimator;
@@ -7,12 +8,14 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.SparseArray;
 import android.view.MotionEvent;
 
-import com.byd.carlauncher.R;
+import com.example.viewdemo.BaseSurfaceView;
+import com.example.viewdemo.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,7 +82,7 @@ public class SAEView extends BaseSurfaceView implements Animator.AnimatorListene
 
     @Override
     protected void onReady() {
-        setBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.music_item2));
+        setBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.gm));
     }
 
     private void analyze() {
@@ -135,9 +138,9 @@ public class SAEView extends BaseSurfaceView implements Animator.AnimatorListene
             return;
         }
         this.bitmap = bitmap;
-        float left = (getMeasuredWidth() >> 1) - (bitmap.getWidth() >> 1);
-        float top = (getMeasuredHeight() >> 1) - (bitmap.getHeight() >> 1);
-        dst.set(left, top, left + bitmap.getWidth(), top + bitmap.getHeight());
+        float cx = getMeasuredWidth() >> 1;
+        float cy = getMeasuredHeight() >> 1;
+        dst.set(cx - 100, cy - 100, cx + 100, cy + 100);
         analyzeDone = false;
         analyze();
     }
@@ -178,6 +181,16 @@ public class SAEView extends BaseSurfaceView implements Animator.AnimatorListene
                 }
             }
         }
+    }
+
+    @Override
+    protected void onDrawRect(Canvas canvas, Object data, Rect rect) {
+
+    }
+
+    @Override
+    protected boolean preventClear() {
+        return false;
     }
 
     @Override
