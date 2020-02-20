@@ -265,6 +265,9 @@ public class VideoView extends BaseSurfaceView {
     }
 
     public void seekTo(int progress) {
+        if (drawStrs == null) {
+            return;
+        }
         boolean isPlay = isPlaying;
         if (isPlay) {
             pause();

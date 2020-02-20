@@ -19,6 +19,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.example.viewdemo.customviews.SAEView;
 import com.zhy.base.fileprovider.FileProvider7;
 
 import java.io.File;
@@ -27,6 +28,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private static final String[] BASIC_PERMISSIONS = new String[]{Manifest.permission.INTERNET,
             Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.CAMERA};
     private BTTView view;
+    private SAEView saeView;
     private String url = "http://img2.imgtn.bdimg.com/it/u=3510436638,3204214416&fm=26&gp=0.jpg";
     private Button choosePic, takePhoto, drawBtn, go2video;
     private String mTempPhotoPath;
@@ -56,6 +58,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         new Thread(() -> {
             view.setBitmap(BitmapFactory.decodeResource(getResources(), R.drawable.gm));
         }).start();
+        saeView = findViewById(R.id.jump_view);
     }
 
     private void choosePhoto() {
@@ -89,6 +92,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     bitmap = BitmapFactory.decodeFile(filePath);
                     Log.e("wwh", "MainActivity-->onActivityResult(): ");
                     view.setBitmap(bitmap);
+                    saeView.setBitmap(Bitmap.createBitmap(bitmap));
                 } else {
                     toast("选择的图片不存在");
                 }
@@ -98,6 +102,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     bitmap = BitmapFactory.decodeFile(mTempPhotoPath);
                     if (bitmap != null) {
                         view.setBitmap(bitmap);
+                        saeView.setBitmap(Bitmap.createBitmap(bitmap));
                     } else {
                         toast("拍照失败2");
                     }
