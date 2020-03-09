@@ -5,7 +5,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Path;
 import android.graphics.PathMeasure;
+import android.graphics.Rect;
 import android.util.AttributeSet;
+
+import com.example.viewdemo.BaseSurfaceView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -93,6 +96,16 @@ public class RippleView extends BaseSurfaceView {
     @Override
     protected void draw(Canvas canvas, Object data) {
 
+    }
+
+    @Override
+    protected void onDrawRect(Canvas canvas, Object data, Rect rect) {
+
+    }
+
+    @Override
+    protected boolean preventClear() {
+        return false;
     }
 
     private class Ripple {
