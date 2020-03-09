@@ -11,6 +11,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
+import android.os.SystemClock;
 import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -219,7 +220,7 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
         private void sendDelay(long millis) {
             checkMessageNonNull();
             onDataUpdate();
-            drawHandler.sendMessageAtTime(message, millis < 0 ? 10 : millis);
+            drawHandler.sendMessageAtTime(message, millis < 0 ? 10 : SystemClock.uptimeMillis() + millis);
         }
 
         private void checkMessageNonNull() {
