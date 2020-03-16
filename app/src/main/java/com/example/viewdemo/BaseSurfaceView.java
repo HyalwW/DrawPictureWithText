@@ -16,6 +16,8 @@ import android.util.AttributeSet;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -30,7 +32,8 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
     protected SurfaceHolder holder;
     protected long UPDATE_RATE = 16;
     protected Paint mPaint;
-    private boolean running = true;
+    private boolean running = true, isDrawing = false;
+    private List<Runnable> queue;
     private LifecycleListener listener;
     private ExecutorService threadPool;
 
@@ -89,6 +92,9 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
     }
 
     private synchronized void drawEverything(Object data, Rect dirty) {
+        dispatchSafeModifyData();
+        isDrawing = true;
+        onDataUpdate();
         if (dirty != null) {
             Canvas canvas = holder.lockCanvas(dirty);
             if (canvas != null) {
@@ -117,6 +123,16 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
                 }
             }
         }
+        isDrawing = false;
+    }
+
+    private void dispatchSafeModifyData() {
+        if (queue != null && queue.size() > 0 && !isDrawing) {
+            for (Runnable runnable : queue) {
+                runnable.run();
+            }
+            queue.clear();
+        }
     }
 
     protected void clearCanvas(Canvas canvas) {
@@ -144,6 +160,9 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         drawHandler.removeCallbacksAndMessages(null);
+        if (queue != null && queue.size() > 0) {
+            queue.clear();
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
             mHandlerThread.quitSafely();
         } else {
@@ -186,6 +205,22 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
         builder.newMsg().what(RUN_ON_THREAD).obj(runnable).send();
     }
 
+    /**
+     * 要随时对list进行操作时用这个
+     *
+     * @param runnable run
+     */
+    public void safeModifyData(Runnable runnable) {
+        if (!isDrawing) {
+            runnable.run();
+        } else {
+            if (queue == null) {
+                queue = new CopyOnWriteArrayList<>();
+            }
+            queue.add(runnable);
+        }
+    }
+
     private final class MsgBuilder {
 
         private Message message;
@@ -219,7 +254,6 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
 
         private void sendDelay(long millis) {
             checkMessageNonNull();
-            onDataUpdate();
             drawHandler.sendMessageAtTime(message, millis < 0 ? 10 : SystemClock.uptimeMillis() + millis);
         }
 
@@ -228,7 +262,6 @@ public abstract class BaseSurfaceView extends SurfaceView implements SurfaceHold
                 throw new IllegalStateException("U should call newMsg() before use");
             }
         }
-
     }
 
     public void setListener(LifecycleListener listener) {

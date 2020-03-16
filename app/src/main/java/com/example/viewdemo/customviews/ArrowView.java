@@ -15,6 +15,8 @@ import android.view.MotionEvent;
 import com.example.viewdemo.BaseSurfaceView;
 import com.example.viewdemo.R;
 
+import java.util.Random;
+
 /**
  * Created by Wang.Wenhui
  * Date: 2020/3/9
@@ -24,7 +26,8 @@ public class ArrowView extends BaseSurfaceView {
     private Bitmap arrow;
     private PathMeasure measure;
     private boolean flying;
-    private Rect dst;
+    private Rect src, dst;
+    private Random random;
 
     public ArrowView(Context context) {
         super(context);
@@ -44,14 +47,16 @@ public class ArrowView extends BaseSurfaceView {
         arrow = BitmapFactory.decodeResource(getResources(), R.drawable.arrow);
         measure = new PathMeasure();
         dst = new Rect();
+        src = new Rect(0, -arrow.getHeight(), arrow.getWidth(), arrow.getHeight() * 2);
         mPaint.setStyle(Paint.Style.STROKE);
-        mPaint.setStrokeWidth(2);
-        mPaint.setColor(Color.RED);
+        mPaint.setStrokeWidth(10);
+        mPaint.setColor(Color.CYAN);
+        random = new Random();
     }
 
     @Override
     protected void onReady() {
-        callDraw("white");
+        startAnim();
     }
 
     @Override
@@ -61,7 +66,11 @@ public class ArrowView extends BaseSurfaceView {
 
     @Override
     protected void onRefresh(Canvas canvas) {
+        canvas.drawColor(randomColor());
+    }
 
+    private int randomColor() {
+        return Color.rgb(random.nextInt(255), random.nextInt(255), random.nextInt(255));
     }
 
     @Override
@@ -75,9 +84,7 @@ public class ArrowView extends BaseSurfaceView {
             float[] pos = new float[2];
             float[] tan = new float[2];
             measure.getPosTan(length, pos, tan);
-            Path path = new Path();
-            measure.getSegment(length, measure.getLength(), path, true);
-            canvas.drawPath(path, mPaint);
+            canvas.save();
             dst.set((int) pos[0] - arrow.getWidth() / 2,
                     (int) pos[1] - arrow.getHeight() / 2,
                     (int) pos[0] + arrow.getWidth() / 2,
@@ -85,6 +92,10 @@ public class ArrowView extends BaseSurfaceView {
             float degress = (float) (Math.atan2(tan[1], tan[0]) * 180 / Math.PI) + 90;
             canvas.rotate(degress, pos[0], pos[1]);
             canvas.drawBitmap(arrow, null, dst, mPaint);
+            canvas.restore();
+            Path path = new Path();
+            measure.getSegment(length - getMeasuredHeight() * 0.2f, length, path, true);
+            canvas.drawPath(path, mPaint);
             if (length < measure.getLength() && flying) {
                 length += (float) getMeasuredHeight() / 70;
                 callDrawDelay(length, 16);

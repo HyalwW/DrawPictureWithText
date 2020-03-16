@@ -1,6 +1,8 @@
 package com.example.viewdemo.customviews;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -9,6 +11,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 
 import com.example.viewdemo.BaseSurfaceView;
+import com.example.viewdemo.R;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +25,8 @@ public class JumpBeanView extends BaseSurfaceView {
     private Random random;
     private final String LEFT = "left", TOP = "top", RIGHT = "right", BOTTOM = "bottom";
     private List<Bean> list;
+    private Bitmap bitmap;
+    private Rect dst;
 
     public JumpBeanView(Context context) {
         super(context);
@@ -40,6 +45,8 @@ public class JumpBeanView extends BaseSurfaceView {
         random = new Random();
         list = new ArrayList<>();
         mPaint.setStyle(Paint.Style.FILL);
+        dst = new Rect();
+        bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.goods);
     }
 
     @Override
@@ -63,7 +70,9 @@ public class JumpBeanView extends BaseSurfaceView {
     protected void onRefresh(Canvas canvas) {
         for (Bean bean : list) {
             mPaint.setColor(bean.color);
-            canvas.drawCircle(bean.nx, bean.ny, bean.radius, mPaint);
+            dst.set(((int) (bean.nx - bitmap.getWidth() / 2)), ((int) (bean.ny - bitmap.getHeight() / 2)), ((int) (bean.nx + bitmap.getWidth() / 2)), (int) (bean.ny + bitmap.getHeight() / 2));
+            canvas.drawBitmap(bitmap, null, dst, mPaint);
+//            canvas.drawCircle(bean.nx, bean.ny, bean.radius, mPaint);
         }
     }
 
@@ -122,6 +131,7 @@ public class JumpBeanView extends BaseSurfaceView {
             radius = randomRadius();
             xSpeed = randomXSpeed();
             ySpeed = randomYSpeed();
+            startTime = System.currentTimeMillis();
         }
 
         void setStartTime(long startTime) {
@@ -189,10 +199,19 @@ public class JumpBeanView extends BaseSurfaceView {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if (event.getAction() == MotionEvent.ACTION_UP) {
-            for (Bean bean : list) {
-                bean.reset();
-            }
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_MOVE:
+//                safeModifyData(() -> {
+//                    list.add(new Bean(randomColor(), event.getX(), event.getY()));
+//                });
+                break;
+            case MotionEvent.ACTION_UP:
+                safeModifyData(() -> {
+                    for (Bean bean : list) {
+                        bean.reset();
+                    }
+                });
+                break;
         }
         return true;
     }
