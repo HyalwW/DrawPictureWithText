@@ -8,7 +8,6 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.util.SparseArray;
 import android.view.MotionEvent;
 
@@ -126,7 +125,6 @@ public class HeartView extends BaseSurfaceView {
         }
 
         synchronized Heart get(float x, float y) {
-            Log.e("wwh", "HeartPool --> get: " + pool.size());
             for (int i = 0; i < pool.size(); i++) {
                 Heart heart = pool.valueAt(i);
                 if (heart.isRecycled) {

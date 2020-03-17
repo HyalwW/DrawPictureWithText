@@ -45,11 +45,8 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
-    <com.example.viewdemo.customviews.ArrowView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
 
-    <com.example.viewdemo.customviews.HeartView
+    <com.example.viewdemo.customviews.TriView
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 

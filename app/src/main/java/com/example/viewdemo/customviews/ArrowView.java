@@ -5,6 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.CornerPathEffect;
 import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.PathMeasure;
@@ -51,12 +52,13 @@ public class ArrowView extends BaseSurfaceView {
         mPaint.setStyle(Paint.Style.STROKE);
         mPaint.setStrokeWidth(10);
         mPaint.setColor(Color.CYAN);
+        mPaint.setPathEffect(new CornerPathEffect(20));
         random = new Random();
     }
 
     @Override
     protected void onReady() {
-        startAnim();
+        callDraw("clear");
     }
 
     @Override
